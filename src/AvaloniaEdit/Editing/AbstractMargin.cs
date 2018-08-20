@@ -41,7 +41,7 @@ namespace AvaloniaEdit.Editing
             this.GetPropertyChangedObservable(TextViewProperty).Subscribe(o =>
             {
                 _wasAutoAddedToTextView = false;
-                OnTextViewChanged((TextView)o.OldValue, (TextView)o.NewValue);
+                OnTextViewChanged(o.OldValue as TextView, o.NewValue as TextView);
             });
         }
 
