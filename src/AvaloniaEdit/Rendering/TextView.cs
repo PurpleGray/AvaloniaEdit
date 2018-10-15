@@ -445,6 +445,7 @@ namespace AvaloniaEdit.Rendering
             if (!alreadyAdded)
             {
                 VisualChildren.Add(inlineObject.Element);
+                ((ISetLogicalParent)inlineObject.Element).SetParent(this);
             }
             inlineObject.Element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             inlineObject.DesiredSize = inlineObject.Element.DesiredSize;
@@ -1050,7 +1051,7 @@ namespace AvaloniaEdit.Rendering
             var properties = new TextRunProperties
             {
                 FontSize = FontSize,
-                Typeface = TextBlock.GetFontFamily(this),
+                Typeface = new Typeface(TextBlock.GetFontFamily(this), FontSize, TextBlock.GetFontStyle(this), TextBlock.GetFontWeight(this)),
                 ForegroundBrush = TextBlock.GetForeground(this),
                 CultureInfo = CultureInfo.CurrentCulture
             };
@@ -1316,6 +1317,8 @@ namespace AvaloniaEdit.Rendering
 
         internal void RenderBackground(DrawingContext drawingContext, KnownLayer layer)
         {
+            // this is necessary so hit-testing works properly and events get tunneled to the TextView.
+            drawingContext.FillRectangle(Brushes.Transparent, Bounds);
             foreach (var bg in _backgroundRenderers)
             {
                 if (bg.Layer == layer)
@@ -1563,6 +1566,7 @@ namespace AvaloniaEdit.Rendering
         #region Visual element pointer handling
 
         [ThreadStatic] private static bool _invalidCursor;
+        private VisualLineElement _currentHoveredElement;
 
         /// <summary>
         /// Updates the pointe cursor, but with background priority.
@@ -1599,6 +1603,13 @@ namespace AvaloniaEdit.Rendering
             base.OnPointerMoved(e);
 
             var element = GetVisualLineElementFromPosition(e.GetPosition(this) + _scrollOffset);
+
+            // Change back to default if hover on a different element
+            if (_currentHoveredElement != element)
+            {
+                Cursor = Cursor.Default;
+                _currentHoveredElement = element;
+            }
             element?.OnQueryCursor(e);
         }
 
